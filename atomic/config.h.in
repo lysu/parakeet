@@ -1,0 +1,11 @@
+#ifndef __ATOMIC_LIMITER_H_
+#define __ATOMIC_LIMITER_H_
+
+#cmakedefine HAVE_GCC_ATOMIC 1
+#cmakedefine HAVE_SCHED_YIELD 1
+
+#ifndef SMP
+#define SMP  1
+#endif
+
+#endif
