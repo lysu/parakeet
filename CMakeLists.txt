@@ -43,6 +43,8 @@ check_c_source_compiles("
         }
 " HAVE_POSIX_SEM)
 
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
 configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_SOURCE_DIR}/include/config.h)
 
 add_subdirectory(src)
