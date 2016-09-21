@@ -20,12 +20,11 @@ typedef struct {
     sem_t sem;
 } limiter_mtx_share_t;
 
-int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr, char *name);
-
+void limiter_mtx_init(void);
+int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr);
 void limiter_mtx_destroy(limiter_mtx_t *mtx);
-
-void limiter_mtx_lock(limiter_mtx_t *mtx);
-
-void limiter_mtx_unlock(limiter_mtx_t *mtx);
+void limiter_mtx_lock(limiter_mtx_t *mtx, pid_t pid);
+uintptr_t limiter_mtx_trylock(limiter_mtx_t *mtx, pid_t pid);
+void limiter_mtx_unlock(limiter_mtx_t *mtx, pid_t pid);
 
 #endif //LIMITER_MTX_H

@@ -5,12 +5,24 @@
 
 #include "mtx.h"
 #include "process.h"
+#include "config.h"
 
-int current_ncpu;
+long current_ncpu;
 
 static void limiter_shmtx_wakeup(limiter_mtx_t *mtx);
 
-int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr, char *name) {
+void limiter_mtx_init(void) {
+#if (HAVE_SC_NPROCESSORS_ONLN)
+    if (current_ncpu == 0) {
+        current_ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+    }
+#endif
+    if (current_ncpu < 1) {
+        current_ncpu = 1;
+    }
+}
+
+int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr) {
     mtx->lock = &addr->lock;
     mtx->sem = &addr->sem;
 
@@ -20,28 +32,30 @@ int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr, char *name
 
     mtx->spin = 2048;
 
+#if (HAVE_POSIX_SEM)
     mtx->wait = &addr->wait;
     if (sem_init(mtx->sem, 1, 0) == -1) {
         fprintf(stderr, "sem_init() failed\n");
     } else {
         mtx->semaphore = 1;
     }
-
-    current_ncpu = 3;
+#endif
 
     return 0;
 }
 
 void limiter_mtx_destroy(limiter_mtx_t *mtx) {
+#if (HAVE_POSIX_SEM)
     if (mtx->semaphore) {
         if (sem_destroy(mtx->sem) == -1) {
             fprintf(stderr, "sem_desctroy() failed\n");
         }
     }
+#endif
 }
 
-void limiter_mtx_lock(limiter_mtx_t *mtx) {
-    atomic_uint_t pid = (atomic_uint_t) getpid();
+void limiter_mtx_lock(limiter_mtx_t *mtx, pid_t pid0) {
+    atomic_uint_t pid = (atomic_uint_t) pid0;
     uint64_t i, n;
     for (;;) {
         if (*mtx->lock == 0) {
@@ -67,31 +81,34 @@ void limiter_mtx_lock(limiter_mtx_t *mtx) {
             }
         }
 
+#if (HAVE_POSIX_SEM)
         if (mtx->semaphore) {
             (void) atomic_fetch_add(mtx->wait, 1);
             if (*mtx->lock == 0 && atomic_cmp_set(mtx->lock, 0, pid)) {
                 (void) atomic_fetch_add(mtx->wait, -1);
                 return;
             }
-//            fprintf(stderr, "shmtx wait %u %d\n", *mtx->wait, getpid());
             while (sem_wait(mtx->sem) == -1) {
                 if (errno != EINTR) {
                     fprintf(stderr, "sem_wait() failed while waiting on shmtx");
                     break;
                 }
             }
-//            fprintf(stderr, "shmtx awoke\n");
             continue;
         }
-
+#endif
         l_sched_yield();
     }
 }
 
-void limiter_mtx_unlock(limiter_mtx_t *mtx) {
-    atomic_uint_t pid = (atomic_uint_t) getpid();
+
+uintptr_t limiter_mtx_trylock(limiter_mtx_t *mtx, pid_t pid) {
+    return (uintptr_t)(*mtx->lock == 0 && atomic_cmp_set(mtx->lock, 0, pid));
+}
+
+void limiter_mtx_unlock(limiter_mtx_t *mtx, pid_t pid0) {
+    atomic_uint_t pid = (atomic_uint_t) pid0;
     if (atomic_cmp_set(mtx->lock, pid, 0)) {
-//        fprintf(stderr, "unlock success, set current pid: %d, want: %d => 0, lock addr: %p\n", *mtx->lock, pid, mtx->lock);
         limiter_shmtx_wakeup(mtx);
     } else {
         fprintf(stderr, "unlock failure, set current pid: %lu, want: %lu => 0, lock addr: %p\n", *mtx->lock, pid,
@@ -100,6 +117,7 @@ void limiter_mtx_unlock(limiter_mtx_t *mtx) {
 }
 
 static void limiter_shmtx_wakeup(limiter_mtx_t *mtx) {
+#if (HAVE_POSIX_SEM)
     uint64_t wait;
 
     if (!mtx->semaphore) {
@@ -119,5 +137,5 @@ static void limiter_shmtx_wakeup(limiter_mtx_t *mtx) {
     if (sem_post(mtx->sem) == -1) {
         fprintf(stderr, "sem_post() failed while wake shmtx");
     }
-//    fprintf(stderr, "shmtx waked %u %d\n", wait, getpid());
+#endif
 }
