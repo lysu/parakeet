@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <mtx.h>
 
 #include "mtx.h"
 #include "process.h"
@@ -22,10 +23,8 @@ void limiter_mtx_init(void) {
     }
 }
 
-int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr) {
-    mtx->lock = &addr->lock;
-    mtx->sem = &addr->sem;
-
+int limiter_mtx_create(limiter_mtx_t *mtx, limiter_sh_mtx_t *sh_mtx) {
+    mtx->lock = &sh_mtx->lock;
     if (mtx->spin == (uint64_t) -1) {
         return 0;
     }
@@ -33,7 +32,7 @@ int limiter_mtx_create(limiter_mtx_t *mtx, limiter_mtx_share_t *addr) {
     mtx->spin = 2048;
 
 #if (HAVE_POSIX_SEM)
-    mtx->wait = &addr->wait;
+    mtx->wait = &sh_mtx->wait;
     if (sem_init(mtx->sem, 1, 0) == -1) {
         fprintf(stderr, "sem_init() failed\n");
     } else {
@@ -103,7 +102,7 @@ void limiter_mtx_lock(limiter_mtx_t *mtx, pid_t pid0) {
 
 
 uintptr_t limiter_mtx_trylock(limiter_mtx_t *mtx, pid_t pid) {
-    return (uintptr_t)(*mtx->lock == 0 && atomic_cmp_set(mtx->lock, 0, pid));
+    return (uintptr_t) (*mtx->lock == 0 && atomic_cmp_set(mtx->lock, 0, pid));
 }
 
 void limiter_mtx_unlock(limiter_mtx_t *mtx, pid_t pid0) {

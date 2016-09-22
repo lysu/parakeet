@@ -6,18 +6,15 @@
 #include "mtx.h"
 
 typedef struct {
-    volatile int lock;
-    volatile long last_add_ts;
-    volatile uintptr_t tokens;
-    volatile uintptr_t active_count;
+    atomic_t *last_add_ts;
+    atomic_t *tokens;
+    atomic_t *active_count;
 } bucket_t;
 
 typedef struct {
-    shm_zone_t *mtx_zone;
-    limiter_mtx_share_t *mtx_share;
-    limiter_mtx_t *mtx;
+    shm_zone_t *s_zone;
 
-    shm_zone_t *bucket_zone;
+    limiter_mtx_t *mtx;
     bucket_t *bucket;
 
     uintptr_t bucket_capcity;

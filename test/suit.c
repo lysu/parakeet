@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <CUnit/Basic.h>
-#include <CUnit/CUnit.h>
-#include <CUnit/TestDB.h>
+#include "CUnit/Basic.h"
+#include "CUnit/CUnit.h"
+#include "CUnit/TestDB.h"
 
 #include "limiter.h"
 
