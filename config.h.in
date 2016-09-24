@@ -5,6 +5,7 @@
 #cmakedefine HAVE_SCHED_YIELD 1
 #cmakedefine HAVE_SC_NPROCESSORS_ONLN 1
 #cmakedefine HAVE_POSIX_SEM 1
+#cmakedefine HAVE_MAP_ANON 1
 
 #ifndef SMP
 #define SMP  1

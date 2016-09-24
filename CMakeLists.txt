@@ -27,6 +27,19 @@ check_c_source_compiles("
 " HAVE_GCC_ATOMIC)
 
 check_c_source_compiles("
+      #include <stddef.h>
+      #include <sys/types.h>
+      #include <sys/mman.h>
+      int main() {
+        void *p;
+        p = mmap(NULL, 4096, PROT_READ|PROT_WRITE,
+            MAP_ANON|MAP_SHARED, -1, 0);
+        if (p == MAP_FAILED) return 1;
+        return 0;
+      }
+" HAVE_MAP_ANON)
+
+check_c_source_compiles("
         int main() {
             sched_yield();
             return 0;

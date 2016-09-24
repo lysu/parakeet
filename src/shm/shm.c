@@ -3,7 +3,11 @@
 #include <sys/mman.h>
 #include <stdio.h>
 
+#include "config.h"
+
 #include "shm.h"
+
+#if (HAVE_MAP_ANON)
 
 int shm_alloc(shm_zone_t *shm) {
     shm->addr = (unsigned char *) mmap(NULL, shm->size, PROT_READ | PROT_WRITE,
@@ -20,3 +24,5 @@ void shm_free(shm_zone_t *shm) {
         fprintf(stderr, "mummap(%p, %zu) failured\n", shm->addr, shm->size);
     }
 }
+
+#endif
