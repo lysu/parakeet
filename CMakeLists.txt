@@ -7,6 +7,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 include(CheckCSourceCompiles)
+
+find_library(HAVE_PTHREADS pthread)
+if(HAVE_PTHREADS)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} pthread)
+endif()
+
 check_c_source_compiles("
       #include <unistd.h>
       int main() {

@@ -9,7 +9,7 @@
 typedef struct {
     atomic_t *lock;
     atomic_t *wait;
-    sem_t *sem;
+    sem_t sem;
     uintptr_t semaphore;
     uintptr_t spin;
 } limiter_mtx_t;

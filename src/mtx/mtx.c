@@ -33,7 +33,7 @@ int limiter_mtx_create(limiter_mtx_t *mtx, limiter_sh_mtx_t *sh_mtx) {
 
 #if (HAVE_POSIX_SEM)
     mtx->wait = &sh_mtx->wait;
-    if (sem_init(mtx->sem, 1, 0) == -1) {
+    if (sem_init(&(mtx->sem), 1, 0) == -1) {
         fprintf(stderr, "sem_init() failed\n");
     } else {
         mtx->semaphore = 1;
@@ -46,7 +46,7 @@ int limiter_mtx_create(limiter_mtx_t *mtx, limiter_sh_mtx_t *sh_mtx) {
 void limiter_mtx_destroy(limiter_mtx_t *mtx) {
 #if (HAVE_POSIX_SEM)
     if (mtx->semaphore) {
-        if (sem_destroy(mtx->sem) == -1) {
+        if (sem_destroy(&(mtx->sem)) == -1) {
             fprintf(stderr, "sem_desctroy() failed\n");
         }
     }
@@ -87,7 +87,7 @@ void limiter_mtx_lock(limiter_mtx_t *mtx, pid_t pid0) {
                 (void) atomic_fetch_add(mtx->wait, -1);
                 return;
             }
-            while (sem_wait(mtx->sem) == -1) {
+            while (sem_wait(&(mtx->sem)) == -1) {
                 if (errno != EINTR) {
                     fprintf(stderr, "sem_wait() failed while waiting on shmtx");
                     break;
@@ -133,7 +133,7 @@ static void limiter_shmtx_wakeup(limiter_mtx_t *mtx) {
         }
     }
 
-    if (sem_post(mtx->sem) == -1) {
+    if (sem_post(&(mtx->sem)) == -1) {
         fprintf(stderr, "sem_post() failed while wake shmtx");
     }
 #endif
