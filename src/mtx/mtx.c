@@ -25,7 +25,7 @@ void limiter_mtx_init(void) {
 
 int limiter_mtx_create(limiter_mtx_t *mtx, limiter_sh_mtx_t *sh_mtx) {
     mtx->lock = &sh_mtx->lock;
-    if (mtx->spin == (uint64_t) -1) {
+    if (mtx->spin == (uintptr_t) -1) {
         return 0;
     }
 
@@ -117,7 +117,7 @@ void limiter_mtx_unlock(limiter_mtx_t *mtx, pid_t pid0) {
 
 static void limiter_shmtx_wakeup(limiter_mtx_t *mtx) {
 #if (HAVE_POSIX_SEM)
-    uint64_t wait;
+    atomic_t wait;
 
     if (!mtx->semaphore) {
         return;
@@ -125,7 +125,7 @@ static void limiter_shmtx_wakeup(limiter_mtx_t *mtx) {
 
     for (;;) {
         wait = *mtx->wait;
-        if ((uint64_t) wait <= 0) {
+        if ((atomic_int_t) wait <= 0) {
             return;
         }
         if (atomic_cmp_set(mtx->wait, wait, wait - 1)) {
